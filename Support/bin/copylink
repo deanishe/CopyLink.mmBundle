@@ -69,7 +69,7 @@ def make_clipboard_output(msg, markdown=False):
 
     """
     output = {}
-    url = 'message://%3c{0}'.format(escape(msg.message_id))
+    url = b'message://%3c{0}'.format(escape(msg.message_id).encode('utf-8'))
     output[UTI_URL] = url
     output[UTI_URL_NAME] = msg.subject
     output[UTI_HTML] = '<a href="{}">{}</a>'.format(url, msg.subject)
