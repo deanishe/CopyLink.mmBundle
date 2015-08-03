@@ -17,4 +17,4 @@ There are 2 defined commands:
 1. `Copy Email Link` (Keyboard shortcut: `^⇧+C`) — Copy a link to the selected message in the above formats.
 2. `Copy Markdown Email Link` — As above, but the plain text link will also be a Markdown link: `[<subject>](<message://url>)`. Use this for applications that don't understand pasted Markdown.
 
-To install the bundle, download the repo and drop it in your `~/Library/Application Support/MailMate/Bundles` directory.
+To install the bundle, download the repo, remove `-master` from the folder name, and drop it in your `~/Library/Application Support/MailMate/Bundles` directory.
