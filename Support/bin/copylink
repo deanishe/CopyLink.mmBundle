@@ -39,7 +39,6 @@ UTI_TEXT = 'public.rtf'
 UTI_PLAIN = 'public.utf8-plain-text'
 UTI_URL = 'public.url'
 UTI_URL_NAME = 'public.url-name'
-UTI_MARKDOWN = 'net.daringfireball.markdown'
 
 RTF_TEMPLATE = """\
 {\\rtf1\\ansi\deff0
@@ -80,10 +79,8 @@ def make_clipboard_output(msg, markdown=False):
         'title': msg.subject.encode('rtfunicode')
     }
     # Markdown-formatted link
-    md_url = '[{0}]({1})'.format(msg.subject, url)
-    output[UTI_MARKDOWN] = md_url
     if markdown:
-        output[UTI_PLAIN] = md_url
+        output[UTI_PLAIN] = '[{0}]({1})'.format(msg.subject, url)
     else:
         output[UTI_PLAIN] = url
 
