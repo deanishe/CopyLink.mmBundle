@@ -1,7 +1,7 @@
 {
-	name          = 'Copy Link to Email';
+	name          = 'Copy Email Link';
 	environment   = 'MM_FROM=${from}\nMM_SUBJECT=${subject.prefix:+${subject.prefix} }${subject.blob:+[${subject.blob}] }${subject.body}\nMM_MESSAGE_ID=${message-id.split}\n';
 	command       = '#!/bin/bash\n"${MM_BUNDLE_SUPPORT}/bin/copylink"';
-	keyEquivalent = "^c";
+	keyEquivalent = "^C";
 	uuid          = '63EFB028-DA5E-441B-B902-0258E62CAABB';
 }
