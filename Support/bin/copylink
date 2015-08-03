@@ -1,0 +1,136 @@
+#!/usr/bin/python
+# encoding: utf-8
+#
+# Copyright © 2015 deanishe@deanishe.net
+#
+# MIT Licence. See http://opensource.org/licenses/MIT
+#
+# Created on 2015-08-03
+#
+
+"""copylink [-m|--markdown]
+
+Copy a MailMate email message to the pasteboard as a link.
+
+The link is copied as rich text, plain text, HTML, and URL formats.
+
+Optionally, the plain text version can be copied as a markdown link.
+
+Usage:
+    -m, --markdown  Generate Markdown link for plain-text type.
+
+"""
+
+from __future__ import print_function, unicode_literals
+
+from cgi import escape
+from collections import namedtuple
+import os
+import sys
+
+from AppKit import NSPasteboard
+from Foundation import NSData
+
+import rtfunicode
+
+UTI_HTML = 'public.html'
+UTI_TEXT = 'public.rtf'
+UTI_PLAIN = 'public.utf8-plain-text'
+UTI_URL = 'public.url'
+UTI_URL_NAME = 'public.url-name'
+
+RTF_TEMPLATE = """\
+{\\rtf1\\ansi\deff0
+{\\field{\\*\\fldinst{HYPERLINK "%(url)s"}}{\\fldrslt %(title)s}}}\
+"""
+
+Message = namedtuple('Message', ['sender', 'subject', 'message_id'])
+
+
+def nsdata(s):
+    """Return an NSData instance for string `s`."""
+    if isinstance(s, unicode):
+        s = s.encode('utf-8')
+    else:
+        s = str(s)
+
+    return NSData.dataWithBytes_length_(s, len(s))
+
+
+def make_clipboard_output(msg, markdown=False):
+    """Generate {UTI: content} mapping for an email message.
+
+    Args:
+        msg (Message namedtuple): The email message
+        markdown (bool): Generate Marikdown link for plain-text type
+
+    Returns:
+        dict: mapping of UTIs to RTF/HTML/URL/plain content (as `str`).
+
+    """
+    output = {}
+    url = 'message://%3c{0}'.format(escape(msg.message_id))
+    output[UTI_URL] = url
+    output[UTI_URL_NAME] = msg.subject
+    output[UTI_HTML] = '<a href="{}">{}</a>'.format(url, msg.subject)
+    output[UTI_TEXT] = RTF_TEMPLATE % {
+        'url': url,
+        'title': msg.subject.encode('rtfunicode')
+    }
+    if markdown:
+        output[UTI_PLAIN] = '[{0}]({1})'.format(msg.subject, url)
+    else:
+        output[UTI_PLAIN] = url
+
+    return output
+
+
+def set_clipboard_contents(contents):
+    """Set the clipboard contents.
+
+    `contents` should have the format:
+
+        {
+            'UTI': 'value',
+            ...
+        }
+
+        e.g. `{'public.html': '<a href="...">...</a>'}`
+
+    Each value must be a `unicode` or `str()`-able object.
+
+    """
+    pboard = NSPasteboard.generalPasteboard()
+    pboard.clearContents()
+    for uti in contents:
+        data = nsdata(contents[uti])
+        pboard.setData_forType_(data, uti.encode('utf-8'))
+
+
+def main():
+    """Run the script."""
+    # Defaults
+    markdown = False
+
+    # Command-line arguments
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ('-m', '--markdown'):
+            markdown = True
+        elif sys.argv[1] in ('-h', '--help', '-help'):
+            print(__doc__)
+            return 0
+        elif sys.argv[1]:
+            print('Unknown argument : `%s`\n' % sys.argv[1])
+            print(__doc__)
+            return 1
+
+    msg = Message(os.getenv('MM_FROM').decode('utf-8'),
+                  os.getenv('MM_SUBJECT').decode('utf-8'),
+                  os.getenv('MM_MESSAGE_ID').decode('utf-8'))
+
+    contents = make_clipboard_output(msg, markdown)
+    set_clipboard_contents(contents)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
