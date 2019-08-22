@@ -2,5 +2,6 @@
 	name          = 'Copy Email Markdown Link';
 	environment   = 'MM_FROM=${from}\nMM_SUBJECT=${subject.prefix:+${subject.prefix} }${subject.blob:+[${subject.blob}] }${subject.body}\nMM_MESSAGE_ID=${message-id.split}\n';
 	command       = '#!/bin/bash\n"${MM_BUNDLE_SUPPORT}/bin/copylink" -m';
+	keyEquivalent = "^C";
 	uuid          = '0A672D1F-6BA1-49AF-B5E7-B3D2EAFABA92';
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # encoding: utf-8
 #
-# Copyright © 2015 deanishe@deanishe.net
+# Copyright (c) 2015 deanishe@deanishe.net
 #
 # MIT Licence. See http://opensource.org/licenses/MIT
 #
@@ -25,14 +25,15 @@ Usage:
 from __future__ import print_function, unicode_literals
 
 from cgi import escape
+import codecs
 from collections import namedtuple
 import os
+import re
 import sys
 
 from AppKit import NSPasteboard
 from Foundation import NSData
 
-import rtfunicode
 
 UTI_HTML = 'public.html'
 UTI_TEXT = 'public.rtf'
@@ -44,6 +45,55 @@ RTF_TEMPLATE = """\
 {\\rtf1\\ansi\deff0
 {\\field{\\*\\fldinst{HYPERLINK "%(url)s"}}{\\fldrslt %(title)s}}}\
 """
+
+# Encode everything < 0x20, the \, { and } characters and everything > 0x7f
+_charescape = b'([\x00-\x1f\\\\{}\x80-\uffff])'
+_charescape = re.compile(_charescape.decode('raw_unicode_escape'))
+
+
+# We can use % interpolation (faster).
+def _replace(match):
+    cp = ord(match.group(1))
+    # Convert codepoint into a signed integer, insert into escape sequence
+    return b'\\u%s?' % (cp > 32767 and cp - 65536 or cp)
+
+
+def _rtfunicode_encode(text, errors):
+    # Encode to RTF \uDDDDD? signed 16 integers and replacement char
+    return _charescape.sub(_replace, text).encode('ascii', errors)
+
+
+class Codec(codecs.Codec):
+    def encode(self, input, errors='strict'):
+        return _rtfunicode_encode(input, errors), len(input)
+
+
+class IncrementalEncoder(codecs.IncrementalEncoder):
+    def encode(self, input, final=False):
+        return _rtfunicode_encode(input, self.errors)
+
+
+class StreamWriter(Codec, codecs.StreamWriter):
+    pass
+
+
+def rtfunicode(name):
+    if name == 'rtfunicode':
+        try:
+            return codecs.CodecInfo(
+                name='rtfunicode',
+                encode=Codec().encode,
+                decode=Codec().decode,  # raises NotImplementedError
+                incrementalencoder=IncrementalEncoder,
+                streamwriter=StreamWriter,
+            )
+        except AttributeError:
+            # Python 2.4
+            return (Codec().encode, Codec().decode, StreamWriter, None)
+
+codecs.register(rtfunicode)
+
+
 
 Message = namedtuple('Message', ['sender', 'subject', 'message_id'])
 
